@@ -6,17 +6,17 @@ WhType records your voice, transcribes it locally, and types the text into the a
 
 ## Folder Structure
 
-WhType/
-├── bin/
-│   ├── wh-type
-│   ├── wh-type-toggle
-│   └── wh-type-settings
-├── install.sh
-├── repair.sh
-├── setup-shortcut.sh
-├── setup-settings-launcher.sh
-├── requirements.txt
-└── README.md
+    WhType/
+    ├── bin/
+    │   ├── wh-type
+    │   ├── wh-type-toggle
+    │   └── wh-type-settings
+    ├── install.sh
+    ├── repair.sh
+    ├── setup-shortcut.sh
+    ├── setup-settings-launcher.sh
+    ├── requirements.txt
+    └── README.md
 
 ## Requirements
 
