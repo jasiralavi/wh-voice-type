@@ -6,3 +6,7 @@ __pycache__/
 *.log
 WhType.zip
 WhType-with-model.zip
+
+# Debian packaging
+*.deb
+deb-build/
