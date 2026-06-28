@@ -1,0 +1,8 @@
+.venv/
+models/
+__pycache__/
+*.pyc
+*.pyo
+*.log
+WhType.zip
+WhType-with-model.zip

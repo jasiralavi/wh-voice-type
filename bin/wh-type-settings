@@ -1,0 +1,157 @@
+#!/usr/bin/env python3
+
+import os
+import tkinter as tk
+from tkinter import ttk, messagebox
+
+APPDIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+CONFIG_DIR = os.path.join(APPDIR, "config")
+CONFIG_FILE = os.path.join(CONFIG_DIR, "settings.conf")
+
+DEFAULTS = {
+    "MODEL": "base.en",
+    "MAX_DURATION": "12",
+    "COPY_TO_CLIPBOARD": "true",
+}
+
+MODEL_OPTIONS = [
+    "tiny.en",
+    "base.en",
+    "small.en",
+    "medium.en",
+    "tiny",
+    "base",
+    "small",
+    "medium",
+]
+
+
+def load_config():
+    data = DEFAULTS.copy()
+
+    if not os.path.exists(CONFIG_FILE):
+        return data
+
+    with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+
+            if key in data:
+                data[key] = value
+
+    return data
+
+
+def save_config(model, duration, copy_clipboard):
+    os.makedirs(CONFIG_DIR, exist_ok=True)
+
+    model = model.strip() or "base.en"
+    duration = duration.strip()
+
+    if not duration.isdigit():
+        raise ValueError("Duration must be a number.")
+
+    duration_num = int(duration)
+
+    if duration_num < 3 or duration_num > 300:
+        raise ValueError("Duration must be between 3 and 300 seconds.")
+
+    copy_value = "true" if copy_clipboard else "false"
+
+    with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+        f.write(f'MODEL="{model}"\n')
+        f.write(f'MAX_DURATION="{duration_num}"\n')
+        f.write(f'COPY_TO_CLIPBOARD="{copy_value}"\n')
+
+
+def main():
+    config = load_config()
+
+    root = tk.Tk()
+    root.title("WhType Settings")
+    root.resizable(False, False)
+
+    main_frame = ttk.Frame(root, padding=18)
+    main_frame.grid(row=0, column=0, sticky="nsew")
+
+    ttk.Label(main_frame, text="WhType Settings", font=("Sans", 14, "bold")).grid(
+        row=0, column=0, columnspan=2, sticky="w", pady=(0, 14)
+    )
+
+    ttk.Label(main_frame, text="Model").grid(row=1, column=0, sticky="w", pady=6)
+
+    model_var = tk.StringVar(value=config["MODEL"])
+    model_box = ttk.Combobox(
+        main_frame,
+        textvariable=model_var,
+        values=MODEL_OPTIONS,
+        width=22,
+    )
+    model_box.grid(row=1, column=1, sticky="ew", pady=6)
+
+    ttk.Label(main_frame, text="Max recording duration").grid(
+        row=2, column=0, sticky="w", pady=6
+    )
+
+    duration_var = tk.StringVar(value=config["MAX_DURATION"])
+    duration_spin = ttk.Spinbox(
+        main_frame,
+        from_=3,
+        to=300,
+        textvariable=duration_var,
+        width=8,
+    )
+    duration_spin.grid(row=2, column=1, sticky="w", pady=6)
+
+    ttk.Label(main_frame, text="seconds").grid(row=2, column=1, sticky="e", pady=6)
+
+    copy_var = tk.BooleanVar(
+        value=str(config["COPY_TO_CLIPBOARD"]).lower() == "true"
+    )
+
+    copy_check = ttk.Checkbutton(
+        main_frame,
+        text="Also copy transcribed text to clipboard",
+        variable=copy_var,
+    )
+    copy_check.grid(row=3, column=0, columnspan=2, sticky="w", pady=(10, 6))
+
+    info = (
+        "Tip: base.en is the best starting point.\n"
+        "tiny.en is faster but less accurate.\n"
+        "small.en is more accurate but slower.\n\n"
+        "New models may download on first use."
+    )
+
+    ttk.Label(main_frame, text=info, foreground="#666").grid(
+        row=4, column=0, columnspan=2, sticky="w", pady=(8, 14)
+    )
+
+    button_frame = ttk.Frame(main_frame)
+    button_frame.grid(row=5, column=0, columnspan=2, sticky="e")
+
+    def on_save():
+        try:
+            save_config(model_var.get(), duration_var.get(), copy_var.get())
+            messagebox.showinfo("WhType", "Settings saved.")
+            root.destroy()
+        except Exception as e:
+            messagebox.showerror("WhType", str(e))
+
+    ttk.Button(button_frame, text="Cancel", command=root.destroy).grid(
+        row=0, column=0, padx=(0, 8)
+    )
+    ttk.Button(button_frame, text="Save", command=on_save).grid(row=0, column=1)
+
+    root.mainloop()
+
+
+if __name__ == "__main__":
+    main()

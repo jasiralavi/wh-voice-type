@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+APPDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+LOG=/tmp/wh-type.log
+exec >>"$LOG" 2>&1
+echo "[wh-type] start $(date --iso-8601=seconds)"
+echo "[wh-type] appdir: $APPDIR"
+
+export PATH="/usr/bin:/bin:/usr/local/bin:$PATH"
+
+CONFIG="$APPDIR/config/settings.conf"
+mkdir -p "$APPDIR/config"
+
+if [ ! -f "$CONFIG" ]; then
+  cat > "$CONFIG" <<'CONF'
+MODEL="base.en"
+MAX_DURATION="12"
+COPY_TO_CLIPBOARD="true"
+CONF
+fi
+
+# Load settings
+# shellcheck disable=SC1090
+source "$CONFIG"
+
+MODEL="${WH_MODEL:-${MODEL:-base.en}}"
+MAX_DURATION="${WH_MAX_DURATION:-${MAX_DURATION:-12}}"
+COPY_TO_CLIPBOARD="${WH_COPY_TO_CLIPBOARD:-${COPY_TO_CLIPBOARD:-true}}"
+
+case "$MAX_DURATION" in
+  ''|*[!0-9]*) MAX_DURATION=12 ;;
+esac
+
+echo "[wh-type] model: $MODEL"
+echo "[wh-type] max duration: ${MAX_DURATION}s"
+echo "[wh-type] copy to clipboard: $COPY_TO_CLIPBOARD"
+
+# Keep Hugging Face / faster-whisper models inside the WhType folder
+export HF_HOME="$APPDIR/models/huggingface"
+export HF_HUB_CACHE="$HF_HOME/hub"
+
+# Prefer system ydotoold socket at /tmp; fall back to user socket
+if [ -S /tmp/.ydotool_socket ]; then
+  export YDOTOOL_SOCKET=/tmp/.ydotool_socket
+elif [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -S "$XDG_RUNTIME_DIR/ydotoold/socket" ]; then
+  export YDOTOOL_SOCKET="$XDG_RUNTIME_DIR/ydotoold/socket"
+fi
+
+echo "[wh-type] YDOTOOL_SOCKET=${YDOTOOL_SOCKET:-unset}"
+
+PIDFILE=/tmp/wh-type.pid
+RECPID=/tmp/wh-type.rec.pid
+
+# Toggle behaviour:
+# First run starts recording.
+# Second run stops recording and transcribes.
+if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+  if [ -f "$RECPID" ] && kill -0 "$(cat "$RECPID")" 2>/dev/null; then
+    echo "[wh-type] toggle: stopping recorder PID $(cat "$RECPID")"
+    kill -TERM "$(cat "$RECPID")" || true
+  fi
+  exit 0
+fi
+
+echo $$ >"$PIDFILE"
+trap 'rm -f "$PIDFILE" "$RECPID"' EXIT
+
+WAV=/tmp/whisper_in.wav
+TRIM=/tmp/whisper_in.trim.wav
+OUT=/tmp/whisper_out.txt
+
+rm -f "$WAV" "$TRIM" "$OUT"
+
+REC_CMD=""
+
+if command -v pw-record >/dev/null 2>&1; then
+  REC_CMD='pw-record --rate 16000 --channels 1 --format s16'
+elif command -v arecord >/dev/null 2>&1; then
+  REC_CMD='arecord -q -f S16_LE -c1 -r16000'
+elif command -v rec >/dev/null 2>&1; then
+  REC_CMD='rec -q -t pulseaudio -r16000 -c1 -b16 -e signed-integer'
+else
+  echo "[wh-type] no recorder found. Need pw-record, arecord, or sox/rec."
+  exit 0
+fi
+
+echo "[wh-type] using recorder: $REC_CMD"
+
+# Max recording time from settings
+( timeout "${MAX_DURATION}s" $REC_CMD "$WAV" ) &
+echo $! >"$RECPID"
+
+wait "$(cat "$RECPID")" || true
+
+BYTES=$(stat -c%s "$WAV" 2>/dev/null || echo 0)
+echo "[wh-type] recorded ${BYTES} bytes"
+
+[ "$BYTES" -gt 1000 ] || {
+  echo "[wh-type] empty/too small capture, exit"
+  exit 0
+}
+
+# Trim silence
+if command -v sox >/dev/null 2>&1; then
+  sox "$WAV" "$TRIM" silence 1 0.10 0.5% 1 1.8 0.5% || cp "$WAV" "$TRIM"
+  mv -f "$TRIM" "$WAV"
+fi
+
+[ -s "$WAV" ] || {
+  echo "[wh-type] empty after trim, exit"
+  exit 0
+}
+
+VENV="$APPDIR/.venv"
+
+echo "[wh-type] transcribe with $MODEL"
+
+if [ ! -x "$VENV/bin/python" ]; then
+  echo "[wh-type] missing python venv at $VENV"
+  exit 1
+fi
+
+"$VENV/bin/python" - "$WAV" "$MODEL" <<'PY' > "$OUT"
+import sys
+from faster_whisper import WhisperModel
+
+wav, model_name = sys.argv[1], sys.argv[2]
+
+model = WhisperModel(model_name, compute_type="int8")
+segments, _ = model.transcribe(wav, vad_filter=True, beam_size=5)
+
+print(" ".join(s.text.strip() for s in segments).strip())
+PY
+
+TEXT="$(tr -s ' ' < "$OUT")"
+echo "[wh-type] text(80): ${TEXT:0:80}"
+
+if [ -n "${TEXT// /}" ]; then
+  COPY_VALUE="$(printf '%s' "$COPY_TO_CLIPBOARD" | tr '[:upper:]' '[:lower:]')"
+
+  if [ "$COPY_VALUE" = "true" ] && command -v wl-copy >/dev/null 2>&1; then
+    printf '%s' "$TEXT" | wl-copy || true
+    echo "[wh-type] copied to clipboard"
+  fi
+
+  if command -v ydotool >/dev/null 2>&1; then
+    ydotool type "$TEXT" || printf '%s' "$TEXT" | wl-copy
+  else
+    printf '%s' "$TEXT" | wl-copy
+  fi
+fi
