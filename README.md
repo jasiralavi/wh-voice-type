@@ -1,4 +1,4 @@
-# WhType
+# Wh Voice Type
 
 Local voice typing for GNOME/Linux using faster-whisper.
 
