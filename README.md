@@ -38,6 +38,37 @@ The system needs:
 - wl-clipboard
 - Internet connection for first model download
 
+## Debian / Ubuntu Package Installation
+
+If you downloaded the `.deb` package from GitHub Releases, install it with:
+
+    sudo apt install ./whtype_0.1.0_all.deb
+
+After installation, run the user setup:
+
+    whtype-setup
+
+This will:
+
+- create the user WhType folder
+- create the Python virtual environment
+- install faster-whisper
+- download/load the base.en model
+- create the Super+R keyboard shortcut
+- create the WhType Settings app launcher
+
+After setup, press:
+
+    Super + R
+
+You can open settings by searching:
+
+    WhType Settings
+
+Or from Terminal:
+
+    whtype-settings
+
 ## Install
 
 Extract the WhType folder.
