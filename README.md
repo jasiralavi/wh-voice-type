@@ -4,6 +4,9 @@ Local voice typing for GNOME/Linux using faster-whisper.
 
 WhType records your voice, transcribes it locally, and types the text into the active window.
 
+
+![Wh Voice Type Settings](whtype-settings.png)
+
 ## Folder Structure
 
     WhType/
