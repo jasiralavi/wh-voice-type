@@ -44,9 +44,11 @@ If you downloaded the `.deb` package from GitHub Releases, install it with:
 
     sudo apt install ./whtype_0.1.0_all.deb
 
-After installation, run the user setup:
+After installation, open the app menu and search:
 
-    whtype-setup
+    Wh Voice Type Settings
+
+On first opening, setup will run automatically.
 
 This will:
 
@@ -55,7 +57,7 @@ This will:
 - install faster-whisper
 - download/load the base.en model
 - create the Super+R keyboard shortcut
-- create the WhType Settings app launcher
+- open the settings window
 
 After setup, press:
 
