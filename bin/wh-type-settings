@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
 
 import os
+import subprocess
 import tkinter as tk
 from tkinter import ttk, messagebox
 
 APPDIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 CONFIG_DIR = os.path.join(APPDIR, "config")
 CONFIG_FILE = os.path.join(CONFIG_DIR, "settings.conf")
+SHORTCUT_SCRIPT = os.path.join(APPDIR, "setup-shortcut.sh")
 
 DEFAULTS = {
     "MODEL": "base.en",
     "MAX_DURATION": "12",
     "COPY_TO_CLIPBOARD": "true",
+    "SHORTCUT": "<Super>r",
 }
 
 MODEL_OPTIONS = [
@@ -49,11 +52,12 @@ def load_config():
     return data
 
 
-def save_config(model, duration, copy_clipboard):
+def save_config(model, duration, copy_clipboard, shortcut):
     os.makedirs(CONFIG_DIR, exist_ok=True)
 
     model = model.strip() or "base.en"
     duration = duration.strip()
+    shortcut = shortcut.strip() or "<Super>r"
 
     if not duration.isdigit():
         raise ValueError("Duration must be a number.")
@@ -69,6 +73,14 @@ def save_config(model, duration, copy_clipboard):
         f.write(f'MODEL="{model}"\n')
         f.write(f'MAX_DURATION="{duration_num}"\n')
         f.write(f'COPY_TO_CLIPBOARD="{copy_value}"\n')
+        f.write(f'SHORTCUT="{shortcut}"\n')
+
+
+def apply_shortcut():
+    if not os.path.exists(SHORTCUT_SCRIPT):
+        raise FileNotFoundError("setup-shortcut.sh was not found.")
+
+    subprocess.run([SHORTCUT_SCRIPT], check=True)
 
 
 def main():
@@ -92,7 +104,7 @@ def main():
         main_frame,
         textvariable=model_var,
         values=MODEL_OPTIONS,
-        width=22,
+        width=24,
     )
     model_box.grid(row=1, column=1, sticky="ew", pady=6)
 
@@ -123,32 +135,63 @@ def main():
     )
     copy_check.grid(row=3, column=0, columnspan=2, sticky="w", pady=(10, 6))
 
-    info = (
+    ttk.Label(main_frame, text="Global shortcut").grid(
+        row=4, column=0, sticky="w", pady=6
+    )
+
+    shortcut_var = tk.StringVar(value=config["SHORTCUT"])
+    shortcut_entry = ttk.Entry(main_frame, textvariable=shortcut_var, width=24)
+    shortcut_entry.grid(row=4, column=1, sticky="ew", pady=6)
+
+    help_text = (
+        "Shortcut examples:\n"
+        "<Super>r    Super + R\n"
+        "<Control><Alt>v    Ctrl + Alt + V\n\n"
         "Tip: base.en is the best starting point.\n"
-        "tiny.en is faster but less accurate.\n"
-        "small.en is more accurate but slower.\n\n"
         "New models may download on first use."
     )
 
-    ttk.Label(main_frame, text=info, foreground="#666").grid(
-        row=4, column=0, columnspan=2, sticky="w", pady=(8, 14)
+    ttk.Label(main_frame, text=help_text, foreground="#666").grid(
+        row=5, column=0, columnspan=2, sticky="w", pady=(8, 14)
     )
 
     button_frame = ttk.Frame(main_frame)
-    button_frame.grid(row=5, column=0, columnspan=2, sticky="e")
+    button_frame.grid(row=6, column=0, columnspan=2, sticky="e")
 
     def on_save():
         try:
-            save_config(model_var.get(), duration_var.get(), copy_var.get())
-            messagebox.showinfo("WhType", "Settings saved.")
+            save_config(
+                model_var.get(),
+                duration_var.get(),
+                copy_var.get(),
+                shortcut_var.get(),
+            )
+            apply_shortcut()
+            messagebox.showinfo("WhType", "Settings saved and shortcut applied.")
             root.destroy()
+        except Exception as e:
+            messagebox.showerror("WhType", str(e))
+
+    def on_apply_shortcut_only():
+        try:
+            save_config(
+                model_var.get(),
+                duration_var.get(),
+                copy_var.get(),
+                shortcut_var.get(),
+            )
+            apply_shortcut()
+            messagebox.showinfo("WhType", "Shortcut applied.")
         except Exception as e:
             messagebox.showerror("WhType", str(e))
 
     ttk.Button(button_frame, text="Cancel", command=root.destroy).grid(
         row=0, column=0, padx=(0, 8)
     )
-    ttk.Button(button_frame, text="Save", command=on_save).grid(row=0, column=1)
+    ttk.Button(button_frame, text="Apply Shortcut", command=on_apply_shortcut_only).grid(
+        row=0, column=1, padx=(0, 8)
+    )
+    ttk.Button(button_frame, text="Save", command=on_save).grid(row=0, column=2)
 
     root.mainloop()
 

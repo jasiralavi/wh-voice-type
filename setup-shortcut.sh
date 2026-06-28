@@ -2,15 +2,24 @@
 set -e
 
 APPDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG="$APPDIR/config/settings.conf"
 CMD="$APPDIR/bin/wh-type-toggle"
+
+SHORTCUT="<Super>r"
+
+if [ -f "$CONFIG" ]; then
+  # shellcheck disable=SC1090
+  source "$CONFIG"
+  SHORTCUT="${SHORTCUT:-<Super>r}"
+fi
 
 SCHEMA="org.gnome.settings-daemon.plugins.media-keys"
 KEY="custom-keybindings"
 DIR="/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/whtype/"
 
-echo "Creating GNOME shortcut for WhType..."
+echo "Creating/updating GNOME shortcut for WhType..."
 echo "Command: $CMD"
-echo "Shortcut: Super + R"
+echo "Shortcut: $SHORTCUT"
 
 CURRENT="$(gsettings get "$SCHEMA" "$KEY")"
 
@@ -39,7 +48,6 @@ gsettings set "$SCHEMA" "$KEY" "$NEW_LIST"
 
 gsettings set "$SCHEMA.custom-keybinding:$DIR" name "WhType Voice Typing"
 gsettings set "$SCHEMA.custom-keybinding:$DIR" command "$CMD"
-gsettings set "$SCHEMA.custom-keybinding:$DIR" binding "<Super>r"
+gsettings set "$SCHEMA.custom-keybinding:$DIR" binding "$SHORTCUT"
 
-echo "Shortcut created."
-echo "Press Super+R once to start recording, and again to stop."
+echo "Shortcut applied."
