@@ -160,3 +160,16 @@ From the folder that contains WhType:
 
     zip -r WhType.zip WhType -x "WhType/.venv/*" -x "WhType/models/*" -x "WhType/__pycache__/*"
 
+
+## Changing the Global Shortcut
+
+Open WhType Settings from the app menu.
+
+Shortcut examples:
+
+    <Super>r
+    <Control><Alt>v
+    <Control><Super>r
+
+After changing the shortcut, click Save.
+
