@@ -42,7 +42,7 @@ The system needs:
 
 If you downloaded the `.deb` package from GitHub Releases, install it with:
 
-    sudo apt install ./whtype_0.1.0_all.deb
+    sudo apt install ./whtype_0.1.1_all.deb
 
 After installation, open the app menu and search:
 
@@ -65,7 +65,7 @@ After setup, press:
 
 You can open settings by searching:
 
-    WhType Settings
+    Wh Voice Type Settings
 
 Or from Terminal:
 
@@ -92,7 +92,7 @@ The installer will:
 - start ydotoold
 - download/load the base.en model
 - create the Super+R keyboard shortcut
-- create the WhType Settings app launcher
+- create the Wh Voice Type Settings app launcher
 
 ## Usage
 
@@ -108,7 +108,7 @@ Press again to stop recording and type the transcribed text.
 
 After installation, open the app menu and search:
 
-    WhType Settings
+    Wh Voice Type Settings
 
 You can also open settings from Terminal:
 
@@ -139,9 +139,9 @@ New models may download on first use.
 
 The default max recording duration is:
 
-    12 seconds
+    20 seconds
 
-You can change this from WhType Settings.
+You can change this from Wh Voice Type Settings.
 
 ## Logs
 
@@ -180,7 +180,7 @@ If the settings app does not appear in the app menu, run:
 
 Then search for:
 
-    WhType Settings
+    Wh Voice Type Settings
 
 ## Notes
 
@@ -199,7 +199,7 @@ From the folder that contains WhType:
 
 ## Changing the Global Shortcut
 
-Open WhType Settings from the app menu.
+Open Wh Voice Type Settings from the app menu.
 
 Shortcut examples:
 
