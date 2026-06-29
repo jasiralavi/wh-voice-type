@@ -10,3 +10,4 @@ WhType-with-model.zip
 # Debian packaging
 *.deb
 deb-build/
+*.bak

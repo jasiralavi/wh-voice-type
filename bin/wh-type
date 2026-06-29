@@ -146,6 +146,10 @@ if [ -n "${TEXT// /}" ]; then
   fi
 
   if command -v ydotool >/dev/null 2>&1; then
+    # Delay typing slightly so the first character is not swallowed
+    # after releasing the global shortcut.
+    sleep "${WH_TYPE_DELAY:-0.45}"
+
     ydotool type "$TEXT" || printf '%s' "$TEXT" | wl-copy
   else
     printf '%s' "$TEXT" | wl-copy
